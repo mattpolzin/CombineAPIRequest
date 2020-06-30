@@ -50,6 +50,7 @@ public struct PartialAPIRequest<Context, Request: Encodable, Response: Decodable
         body: @escaping (Context) throws -> Request?,
         including includes: [String] = [],
         additionalHeaders: [String: String] = [:],
+        additionalQueryItems: [URLQueryItem] = [],
         responseType: Response.Type,
         encode: @escaping (Request) throws -> Data = { try JSONEncoder().encode($0) }
     ) throws {
@@ -61,6 +62,7 @@ public struct PartialAPIRequest<Context, Request: Encodable, Response: Decodable
             body: body,
             including: includes,
             additionalHeaders: additionalHeaders,
+            additionalQueryItems: additionalQueryItems,
             encode: encode
         )
     }
@@ -73,14 +75,21 @@ public struct PartialAPIRequest<Context, Request: Encodable, Response: Decodable
         body: @escaping (Context) throws -> Request?,
         including includes: [String] = [],
         additionalHeaders: [String: String] = [:],
+        additionalQueryItems: [URLQueryItem] = [],
         encode: @escaping (Request) throws -> Data = { try JSONEncoder().encode($0) }
     ) throws {
         var urlComponents = URLComponents(url: host, resolvingAgainstBaseURL: false)!
 
         urlComponents.path = path
+
+        var queryItems = [URLQueryItem]()
         if includes.count > 0 {
-            urlComponents.queryItems = [.init(name: "include", value: includes.joined(separator: ","))]
+            queryItems.append(.init(name: "include", value: includes.joined(separator: ",")))
         }
+        for queryParam in additionalQueryItems {
+            queryItems.append(queryParam)
+        }
+        urlComponents.queryItems = queryItems
 
         guard let url = urlComponents.url else {
             throw RequestFailure.urlConstruction(String(describing: urlComponents))

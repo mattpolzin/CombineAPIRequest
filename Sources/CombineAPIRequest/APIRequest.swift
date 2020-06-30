@@ -86,6 +86,7 @@ extension APIRequest where Request == Void {
         path: String,
         including includes: [String] = [],
         additionalHeaders: [String: String] = [:],
+        additionalQueryItems: [URLQueryItem] = [],
         responseType: Response.Type
     ) throws {
         try self.init(
@@ -94,7 +95,8 @@ extension APIRequest where Request == Void {
             host: host,
             path: path,
             including: includes,
-            additionalHeaders: additionalHeaders
+            additionalHeaders: additionalHeaders,
+            additionalQueryItems: additionalQueryItems
         )
     }
 
@@ -104,7 +106,8 @@ extension APIRequest where Request == Void {
         host: URL,
         path: String,
         including includes: [String] = [],
-        additionalHeaders: [String: String] = [:]
+        additionalHeaders: [String: String] = [:],
+        additionalQueryItems: [URLQueryItem] = []
     ) throws {
         self.method = method
         self.contentType = contentType
@@ -114,9 +117,15 @@ extension APIRequest where Request == Void {
         var urlComponents = URLComponents(url: host, resolvingAgainstBaseURL: false)!
 
         urlComponents.path = path
+
+        var queryItems = [URLQueryItem]()
         if includes.count > 0 {
-            urlComponents.queryItems = [.init(name: "include", value: includes.joined(separator: ","))]
+            queryItems.append(.init(name: "include", value: includes.joined(separator: ",")))
         }
+        for queryParam in additionalQueryItems {
+            queryItems.append(queryParam)
+        }
+        urlComponents.queryItems = queryItems
 
         guard let url = urlComponents.url else {
             throw RequestFailure.urlConstruction(String(describing: urlComponents))
@@ -134,6 +143,7 @@ extension APIRequest where Request: Encodable {
         body: Request,
         including includes: [String] = [],
         additionalHeaders: [String: String] = [:],
+        additionalQueryItems: [URLQueryItem] = [],
         encode: (Request) throws -> Data = { try JSONEncoder().encode($0) }
     ) throws {
         try self.init(
@@ -144,6 +154,7 @@ extension APIRequest where Request: Encodable {
             body: body,
             including: includes,
             additionalHeaders: additionalHeaders,
+            additionalQueryItems: additionalQueryItems,
             encode: encode
         )
     }
@@ -156,6 +167,7 @@ extension APIRequest where Request: Encodable {
         body: Request,
         including includes: [String] = [],
         additionalHeaders: [String: String] = [:],
+        additionalQueryItems: [URLQueryItem] = [],
         responseType: Response.Type,
         encode: (Request) throws -> Data = { try JSONEncoder().encode($0) }
     ) throws {
@@ -167,9 +179,15 @@ extension APIRequest where Request: Encodable {
         var urlComponents = URLComponents(url: host, resolvingAgainstBaseURL: false)!
 
         urlComponents.path = path
+
+        var queryItems = [URLQueryItem]()
         if includes.count > 0 {
-            urlComponents.queryItems = [.init(name: "include", value: includes.joined(separator: ","))]
+            queryItems.append(.init(name: "include", value: includes.joined(separator: ",")))
         }
+        for queryParam in additionalQueryItems {
+            queryItems.append(queryParam)
+        }
+        urlComponents.queryItems = queryItems
 
         guard let url = urlComponents.url else {
             throw RequestFailure.urlConstruction(String(describing: urlComponents))
@@ -184,6 +202,7 @@ extension APIRequest where Request: Encodable {
         path: String,
         including includes: [String] = [],
         additionalHeaders: [String: String] = [:],
+        additionalQueryItems: [URLQueryItem] = [],
         requestBodyConstructor: @escaping (Other) throws -> Request,
         responseType: Response.Type,
         encode: @escaping (Request) throws -> Data = { try JSONEncoder().encode($0) }
@@ -197,6 +216,7 @@ extension APIRequest where Request: Encodable {
                 body: try requestBodyConstructor(existingDocument),
                 including: includes,
                 additionalHeaders: additionalHeaders,
+                additionalQueryItems: additionalQueryItems,
                 responseType: responseType,
                 encode: encode
             )
