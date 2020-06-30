@@ -12,6 +12,7 @@ import Combine
 public struct PartialAPIRequest<Context, Request: Encodable, Response: Decodable> {
     public let method: HttpVerb
     public let contentType: HttpContentType
+    public let additionalHeaders: [String: String]
     public let url: (Context) throws -> URL
     public let bodyData: (Context) throws -> Data?
 
@@ -19,6 +20,7 @@ public struct PartialAPIRequest<Context, Request: Encodable, Response: Decodable
         return APIRequest(
             method: method,
             contentType: contentType,
+            additionalHeaders: additionalHeaders,
             url: try url(context),
             bodyData: try bodyData(context)
         )
@@ -29,11 +31,13 @@ public struct PartialAPIRequest<Context, Request: Encodable, Response: Decodable
         contentType: HttpContentType = .json,
         url: @escaping (Context) -> URL,
         body: @escaping (Context) throws -> Request?,
+        additionalHeaders: [String: String] = [:],
         responseType: Response.Type,
         encode: @escaping (Request) throws -> Data = { try JSONEncoder().encode($0) }
     ) {
         self.method = method
         self.contentType = contentType
+        self.additionalHeaders = additionalHeaders
         self.url = url
         self.bodyData = { context in try body(context).map(encode) }
     }
@@ -45,6 +49,7 @@ public struct PartialAPIRequest<Context, Request: Encodable, Response: Decodable
         path: String,
         body: @escaping (Context) throws -> Request?,
         including includes: [String] = [],
+        additionalHeaders: [String: String] = [:],
         responseType: Response.Type,
         encode: @escaping (Request) throws -> Data = { try JSONEncoder().encode($0) }
     ) throws {
@@ -55,6 +60,7 @@ public struct PartialAPIRequest<Context, Request: Encodable, Response: Decodable
             path: path,
             body: body,
             including: includes,
+            additionalHeaders: additionalHeaders,
             encode: encode
         )
     }
@@ -66,6 +72,7 @@ public struct PartialAPIRequest<Context, Request: Encodable, Response: Decodable
         path: String,
         body: @escaping (Context) throws -> Request?,
         including includes: [String] = [],
+        additionalHeaders: [String: String] = [:],
         encode: @escaping (Request) throws -> Data = { try JSONEncoder().encode($0) }
     ) throws {
         var urlComponents = URLComponents(url: host, resolvingAgainstBaseURL: false)!
@@ -82,6 +89,7 @@ public struct PartialAPIRequest<Context, Request: Encodable, Response: Decodable
 
         self.method = method
         self.contentType = contentType
+        self.additionalHeaders = additionalHeaders
         self.bodyData = { context in try body(context).map(encode) }
     }
 }

@@ -24,6 +24,7 @@ public enum HttpContentType: String, Equatable {
 public struct APIRequest<Request, Response: Decodable> {
     public let method: HttpVerb
     public let contentType: HttpContentType
+    public let additionalHeaders: [String: String]
     public let url: URL
     public let bodyData: Data?
 
@@ -36,6 +37,9 @@ public struct APIRequest<Request, Response: Decodable> {
         request.httpMethod = method.rawValue
         request.httpBody = bodyData
         request.addValue(contentType.rawValue, forHTTPHeaderField: "Content-Type")
+        for header in additionalHeaders {
+            request.addValue(header.value, forHTTPHeaderField: header.key)
+        }
 
         let dataPublisher = URLSession.shared.dataTaskPublisher(for: request)
             .tryMap { (data, response) -> Data in
@@ -81,14 +85,16 @@ extension APIRequest where Request == Void {
         host: URL,
         path: String,
         including includes: [String] = [],
-        responseType: Response.Type
+        responseType: Response.Type,
+        additionalHeaders: [String: String] = [:]
     ) throws {
         try self.init(
             method,
             contentType: contentType,
             host: host,
             path: path,
-            including: includes
+            including: includes,
+            additionalHeaders: additionalHeaders
         )
     }
 
@@ -97,10 +103,12 @@ extension APIRequest where Request == Void {
         contentType: HttpContentType = .json,
         host: URL,
         path: String,
-        including includes: [String] = []
+        including includes: [String] = [],
+        additionalHeaders: [String: String] = [:]
     ) throws {
         self.method = method
         self.contentType = contentType
+        self.additionalHeaders = additionalHeaders
         self.bodyData = nil
 
         var urlComponents = URLComponents(url: host, resolvingAgainstBaseURL: false)!
@@ -125,6 +133,7 @@ extension APIRequest where Request: Encodable {
         path: String,
         body: Request,
         including includes: [String] = [],
+        additionalHeaders: [String: String] = [:],
         encode: (Request) throws -> Data = { try JSONEncoder().encode($0) }
     ) throws {
         try self.init(
@@ -134,6 +143,7 @@ extension APIRequest where Request: Encodable {
             path: path,
             body: body,
             including: includes,
+            additionalHeaders: additionalHeaders,
             encode: encode
         )
     }
@@ -145,11 +155,13 @@ extension APIRequest where Request: Encodable {
         path: String,
         body: Request,
         including includes: [String] = [],
+        additionalHeaders: [String: String] = [:],
         responseType: Response.Type,
         encode: (Request) throws -> Data = { try JSONEncoder().encode($0) }
     ) throws {
         self.method = method
         self.contentType = contentType
+        self.additionalHeaders = additionalHeaders
         self.bodyData = try encode(body)
 
         var urlComponents = URLComponents(url: host, resolvingAgainstBaseURL: false)!
@@ -171,6 +183,7 @@ extension APIRequest where Request: Encodable {
         host: URL,
         path: String,
         including includes: [String] = [],
+        additionalHeaders: [String: String] = [:],
         requestBodyConstructor: @escaping (Other) throws -> Request,
         responseType: Response.Type,
         encode: @escaping (Request) throws -> Data = { try JSONEncoder().encode($0) }
@@ -183,6 +196,7 @@ extension APIRequest where Request: Encodable {
                 path: path,
                 body: try requestBodyConstructor(existingDocument),
                 including: includes,
+                additionalHeaders: additionalHeaders,
                 responseType: responseType,
                 encode: encode
             )
