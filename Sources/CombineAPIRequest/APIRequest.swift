@@ -85,8 +85,8 @@ extension APIRequest where Request == Void {
         host: URL,
         path: String,
         including includes: [String] = [],
-        responseType: Response.Type,
-        additionalHeaders: [String: String] = [:]
+        additionalHeaders: [String: String] = [:],
+        responseType: Response.Type
     ) throws {
         try self.init(
             method,
