@@ -144,6 +144,7 @@ extension APIRequest where Request: Encodable {
         including includes: [String] = [],
         additionalHeaders: [String: String] = [:],
         additionalQueryItems: [URLQueryItem] = [],
+        responseType: Response.Type,
         encode: (Request) throws -> Data = { try JSONEncoder().encode($0) }
     ) throws {
         try self.init(
@@ -168,7 +169,6 @@ extension APIRequest where Request: Encodable {
         including includes: [String] = [],
         additionalHeaders: [String: String] = [:],
         additionalQueryItems: [URLQueryItem] = [],
-        responseType: Response.Type,
         encode: (Request) throws -> Data = { try JSONEncoder().encode($0) }
     ) throws {
         self.method = method
